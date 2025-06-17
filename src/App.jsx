@@ -20,6 +20,7 @@ import SellerLayout from "./pages/seller/SellerLayout";
 import AddProduct from "./pages/seller/AddProduct";
 import ProductList from "./pages/seller/ProductList";
 import Orders from "./pages/seller/Orders";
+import Loading from "./components/Loading";
 
 function App() {
   const isSellerPath = useLocation().pathname.includes("seller");
@@ -40,6 +41,7 @@ function App() {
           <Route path="/my-cart" element={<Cart />} />
           <Route path="/my-orders" element={<MyOrders />} />
           <Route path="/add-address" element={<AddAddress />} />
+          <Route path="/loader" element={<Loading />} />
 
           <Route
             path="/seller"

@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 import { assets } from "../assets/assets.js";
 import { useState } from "react";
 import { useAppContext } from "../context/AppContext.jsx";
+import toast from "react-hot-toast";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -15,12 +16,23 @@ export default function Navbar() {
     setSearchQuery,
     getCartItemCount,
     setCartItems,
+    axios,
   } = useAppContext();
 
-  function logout() {
-    setCartItems({});
-    setUser(null);
-    navigate("/");
+  async function logout() {
+    try {
+      const { data } = await axios.get("/api/user/sign-out");
+      if (data.success) {
+        toast.success(data.message);
+        setUser(null);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      const msg = error.response?.data?.message || error.message;
+
+      toast.error(msg);
+    }
   }
 
   useEffect(() => {
@@ -90,7 +102,9 @@ export default function Navbar() {
               alt="ProfileImage"
               className="w-10"
             />
+            {console.log(user)}
             <ul className=" hidden group-hover:block absolute top-10 right-0 bg-white shadow border border gray-200 py-2.5 w-30 rounded-md text-sm z-90">
+              <li className="p-1.5 pl-3 overflow-x-auto">{user.email}</li>
               <li
                 className="p-1.5 pl-3 hover:bg-primary/10 cursor:pointer"
                 onClick={() => {

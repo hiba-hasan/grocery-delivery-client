@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { assets } from "../assets/assets";
+import { useAppContext } from "../context/AppContext";
+import toast from "react-hot-toast";
 
 function AddAddress() {
   const [address, setAddress] = useState({
@@ -13,9 +15,26 @@ function AddAddress() {
     country: "",
     phone: "",
   });
-  function onSubmitHandler(e) {
+
+  const { axios, navigate, user } = useAppContext();
+  async function onSubmitHandler(e) {
     e.preventDefault();
+    try {
+      const { data } = await axios.post("/api/address/add", { address });
+      if (data.success) {
+        toast.success(data.success);
+        navigate("/my-cart");
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
   }
+
+  useEffect(() => {
+    if (!user) navigate("/my-cart");
+  }, []);
 
   function handleChange(e) {
     console.log(e.target);

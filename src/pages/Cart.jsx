@@ -1,25 +1,29 @@
 import React from "react";
 import { useAppContext } from "../context/AppContext";
 import { useEffect, useState } from "react";
-import { assets, dummyAddress } from "../assets/assets";
+import { assets } from "../assets/assets";
+import toast from "react-hot-toast";
 
 function Cart() {
   const [cartArray, setCartArray] = useState([]);
-  const [addresses, setAddresses] = useState(dummyAddress);
-  const [selectedAddress, setSelectedAddress] = useState(dummyAddress[0]);
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState(null);
   const [showAddress, setShowAddress] = useState(false);
   const [payment, setPayment] = useState("COD");
 
   const {
     cartItems,
+    setCartItems,
     products,
     updateCartItem,
     totalAmount,
     calculateTotalAmount,
-
+    currency,
     removeCartItem,
     getCartItemCount,
     navigate,
+    axios,
+    user,
   } = useAppContext();
   //   console.log(Object.values(cartItems));
 
@@ -27,6 +31,7 @@ function Cart() {
     let temp = [];
     for (const item in cartItems) {
       const cartProduct = products.find((i) => i._id == item);
+      cartProduct.quantity = cartItems[item];
 
       // const isPresent = cartArray.find((i) => i._id == cartProduct._id);
 
@@ -38,13 +43,72 @@ function Cart() {
     }
     setCartArray(temp);
   }
+  async function getAddresses() {
+    try {
+      const { data } = await axios.get("/api/address/get");
+      if (data.success) {
+        console.log(data.addresses);
+        setAddresses(data.addresses);
+        setSelectedAddress(data.addresses[0]);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error.message);
+    }
+  }
+
+  useEffect(() => {
+    if (user) {
+      getAddresses();
+    }
+  }, [user]);
 
   useEffect(() => {
     addCartArray(), calculateTotalAmount();
   }, [cartItems]);
   //   return <div>{cartArray.map((product)=><CartPage/>)}</div>;
 
-  async function placeOrder() {}
+  async function placeOrder() {
+    if (payment == "COD") {
+      try {
+        const { data } = await axios.post("/api/order/cod", {
+          items: cartArray.map((item) => ({
+            product: item._id,
+            quantity: item.quantity,
+          })),
+          address: selectedAddress._id,
+        });
+        if (data.success) {
+          toast.success("Order Placed Successfully");
+          window.location.replace(data.url);
+          setCartItems({});
+        }
+      } catch (error) {
+        toast.error(error);
+      }
+    } else {
+      try {
+        const { data } = await axios.post("/api/order/stripe", {
+          items: cartArray.map((item) => ({
+            product: item._id,
+            quantity: item.quantity,
+          })),
+          address: selectedAddress._id,
+        });
+        if (data.success) {
+          toast.success("Order Placed Successfully");
+          window.location.replace(data.url);
+          // setCartItems({});
+        } else {
+          toast.error(data.error);
+          console.log(data.message);
+        }
+      } catch (error) {
+        toast.error(error);
+        console.log(error);
+      }
+    }
+  }
 
   return (
     <div className="flex flex-col md:flex-row py-16 max-w-6xl w-full px-6 mx-auto">
@@ -118,7 +182,8 @@ function Cart() {
               </div>
             </div>
             <p className="text-center">
-              ${product.offerPrice * cartItems[product._id]}
+              {currency}
+              {product.offerPrice * cartItems[product._id]}
             </p>
             <button
               className="cursor-pointer mx-auto"

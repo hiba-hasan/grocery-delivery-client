@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { assets, categories } from "../../assets/assets";
 import { useAppContext } from "../../context/AppContext";
+import toast from "react-hot-toast";
 const AddProduct = () => {
   const [files, setFiles] = useState([]);
   const [name, setName] = useState("");
@@ -9,8 +10,40 @@ const AddProduct = () => {
   const [price, setPrice] = useState("");
   const [offerPrice, setOfferPrice] = useState("");
 
+  const { axios } = useAppContext();
+
   async function onSubmitHandler(e) {
-    e.preventDefault();
+    try {
+      e.preventDefault();
+      const productData = {
+        name,
+        description: description.split("/n"),
+        category,
+        price,
+        offerPrice,
+      };
+      console.log(typeof productData);
+      const formData = new FormData();
+      formData.append("productData", JSON.stringify(productData));
+      for (let i = 0; i < files.length; i++) {
+        formData.append("Images", files[i]);
+      }
+
+      const { data } = await axios.post("/api/product/add", formData);
+      if (data) {
+        toast.success(data.message);
+        setName("");
+        setDescription("");
+        setCategory("");
+        setPrice("");
+        setOfferPrice("");
+        setFiles([]);
+      }
+    } catch (error) {
+      const msg = error.response?.data?.message || error.message;
+
+      toast.error(msg);
+    }
   }
   return (
     <div className="no-scrollbar flex-1 h-[95vh] overflow-y-scroll flex flex-col justify-between">
@@ -90,6 +123,7 @@ const AddProduct = () => {
             onChange={(e) => setCategory(e.target.value)}
             id="category"
             className="outline-none md:py-2.5 py-2 px-3 rounded border border-gray-500/40"
+            value={category}
           >
             <option value="">Select Category</option>
             {categories.map((item, index) => (

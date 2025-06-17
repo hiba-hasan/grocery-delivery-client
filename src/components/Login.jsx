@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAppContext } from "../context/AppContext";
+import toast from "react-hot-toast";
 
 const Login = () => {
   const [state, setState] = useState("login");
@@ -7,7 +8,52 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const { setShowUserLogin, setUser } = useAppContext();
+  const { setShowUserLogin, setUser, axios } = useAppContext();
+
+  async function onSubmitHandler(e) {
+    e.preventDefault();
+    console.log(state);
+    try {
+      if (state == "login") {
+        const { data } = await axios.post("/api/user/sign-in", {
+          email,
+          password,
+        });
+
+        if (data.success) {
+          console.log("login:if");
+          toast.success(data.message);
+          setShowUserLogin(false);
+          setUser({ name, email });
+        } else {
+          console.log("Login: else ");
+          toast.error(data.error);
+        }
+      } else if (state == "register") {
+        const { data } = await axios.post("/api/user/sign-up", {
+          name,
+          email,
+          password,
+        });
+
+        if (data.success) {
+          toast.success(data.message);
+          setShowUserLogin(false);
+          setUser({ name, email });
+        } else {
+          toast.error(data.error);
+        }
+      }
+    } catch (error) {
+      console.log(error);
+      const msg = error.response?.data?.message || error.message;
+
+      toast.error(msg);
+      setName("");
+      setEmail("");
+      setPassword("");
+    }
+  }
 
   return (
     <div
@@ -15,11 +61,7 @@ const Login = () => {
       className="fixed top-0 bottom-0 left-0 right-0 z-30 flex items-center text-sm text-gray-600 bg-black/50"
     >
       <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          setUser("Hello");
-          setShowUserLogin(false);
-        }}
+        onSubmit={(e) => onSubmitHandler(e)}
         onClick={(e) => {
           e.stopPropagation();
         }}

@@ -1,7 +1,20 @@
 import { useAppContext } from "../../context/AppContext";
+import toast from "react-hot-toast";
 
 const ProductList = () => {
-  const { products } = useAppContext();
+  const { products, axios, fetchProducts } = useAppContext();
+
+  async function toggleInStock(id, inStock) {
+    console.log("Clicked");
+    console.log(inStock);
+    const { data } = await axios.post("/api/product/stock", { id, inStock });
+    if (data.success) {
+      fetchProducts();
+      toast.success(data.message);
+    } else {
+      toast.error(data.error);
+    }
+  }
 
   return (
     <div className="no-scrollbar flex-1 h-[95vh] overflow-y-scroll flex flex-col justify-between">
@@ -41,6 +54,10 @@ const ProductList = () => {
                   <td className="px-4 py-3">
                     <label className="relative inline-flex items-center cursor-pointer text-gray-900 gap-3">
                       <input
+                        onClick={() =>
+                          toggleInStock(product._id, !product.inStock)
+                        }
+                        checked={product.inStock}
                         type="checkbox"
                         className="sr-only peer"
                         defaultChecked={product.inStock}

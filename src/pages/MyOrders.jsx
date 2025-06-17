@@ -1,10 +1,29 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useState } from "react";
-import { dummyOrders } from "../assets/assets";
 import { useAppContext } from "../context/AppContext";
+import toast from "react-hot-toast";
 
 function MyOrders() {
-  const [myOrders, setMyOrders] = useState(dummyOrders);
+  const [myOrders, setMyOrders] = useState([]);
+  const { axios } = useAppContext();
+
+  async function fetchMyOrders() {
+    try {
+      const { data } = await axios.get("/api/order/user");
+      if (data.success) {
+        console.log(data.orders);
+        setMyOrders(data.orders);
+      } else {
+        console.log(data.error);
+      }
+    } catch (error) {
+      toast.error(error);
+    }
+  }
+
+  useEffect(() => {
+    fetchMyOrders();
+  }, []);
 
   const { currency } = useAppContext();
 
@@ -23,7 +42,7 @@ function MyOrders() {
             </p>
             {order.items.map((item) => (
               <div className="flex flex-col md:flex-row md:items-center justify-between p-4 py-5 font-gray">
-                <div className="flex items-center mb-4 md:mb-0 md:flex-col">
+                <div className="flex mb-4 md:mb-0 md:flex-row ">
                   <div className="bg-primary/10 p-4 rounded-lg">
                     <img
                       src={item.product.image[0]}

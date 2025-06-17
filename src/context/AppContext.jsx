@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { dummyProducts } from "../assets/assets";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 
@@ -11,8 +10,8 @@ const AppContext = createContext({});
 
 export const AppContextProvider = ({ children }) => {
   const navigate = useNavigate();
-  const [user, setUser] = useState("hello");
-  const [isSeller, setIsSeller] = useState(true);
+  const [user, setUser] = useState(null);
+  const [isSeller, setIsSeller] = useState(false);
   const [showUserLogin, setShowUserLogin] = useState(false);
   const [products, setProducts] = useState([]);
   const [cartItems, setCartItems] = useState({});
@@ -21,13 +20,81 @@ export const AppContextProvider = ({ children }) => {
 
   const currency = import.meta.env.VITE_CURRENCY;
 
-  //set Products for Best Sellers
-  function fetchProducts() {
-    setProducts(dummyProducts);
-  }
-  //run the above func only when initially mounted
-  useEffect(fetchProducts, []);
+  async function fetchSellerStatus() {
+    try {
+      console.log("HEllo");
+      const { data } = await axios.get("/api/seller/is-Auth");
+      if (data.success) {
+        setIsSeller(true);
+      } else {
+        setIsSeller(false);
+      }
+    } catch (error) {
+      setIsSeller(false);
+      const msg = error.response?.data?.message || error.message;
 
+      toast.error(msg);
+      setIsSeller(false);
+    }
+  }
+
+  async function fetchUser() {
+    try {
+      const { data } = await axios.get("/api/user/is-Auth");
+      if (data.success) {
+        const email = data.user.email;
+        const pass = data.user.password;
+        console.log(email, pass);
+        setUser({ email, password: pass });
+        console.log(data.user.cartItems);
+        setCartItems(data.user.cartItems);
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      console.log(error);
+      setUser(null);
+    }
+  }
+
+  //set Products for Best Sellers
+  async function fetchProducts() {
+    try {
+      const { data } = await axios.get("/api/product/list");
+      if (data.success) {
+        setProducts(data.products);
+      } else {
+        toast.error(data.error);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  }
+
+  //run the above func only when initially mounted
+  useEffect(() => {
+    fetchProducts();
+    fetchSellerStatus();
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    async function updateCart() {
+      try {
+        console.log("CArt ITEMS in uodate CArt function", cartItems);
+        const { data } = await axios.post("/api/cart/update", { cartItems });
+        if (!data.success) {
+          toast.error(data.message);
+        }
+      } catch (error) {
+        toast.error(error.message);
+      }
+    }
+
+    if (user) {
+      updateCart();
+    }
+  }, [cartItems]);
   /*CART ITEMS FUNCTIONALITIES*/
 
   function addCartItems(itemId) {
@@ -91,6 +158,7 @@ export const AppContextProvider = ({ children }) => {
     setShowUserLogin,
     navigate,
     products,
+    fetchProducts,
     currency,
     cartItems,
     setCartItems,
